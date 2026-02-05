@@ -1,151 +1,133 @@
-🚕 NYC Taxi Trip Duration — ML Service (Production-Ready MLOps Pipeline)
+🚕 NYC Taxi Trip Duration — MLOps Pipeline
 
-    Production-ready ML pipeline для предсказания длительности поездок NYC Taxi с использованием CatBoost, Optuna, FastAPI и Docker Compose.
-    Проект реализует полный цикл MLOps: от обучения модели до сервинга и hot-reload'а.
+    Production‑ready MLOps сервис для предсказания длительности поездок NYC Taxi на основе CatBoost + Optuna + FastAPI + Docker Compose.
+    Полный цикл: обучение → деплой → инференс → hot‑reload моделей.
 
-🧩 Структура проекта
+📁 Структура проекта
 
 bash
 ml-mvp/
-├── .env                   # Конфиги: пути, порты, RMSLE_THRESHOLD=0.40
-├── .gitignore             # venv/, *.pyc, models.pkl и др.
+├── .env                   # Конфиги (пути, порты, RMSLE_THRESHOLD=0.40)
+├── .gitignore             # venv/, *.pyc, артефакты моделей и т.п.
 ├── docker-compose.yml     # 3 сервиса: training, inference (port 8000), tools
-├── pyproject.toml         # Зависимости: fastapi, catboost, pandas, optuna, uv
+├── pyproject.toml         # Зависимости (FastAPI, CatBoost, Optuna, Pandas, uv)
 ├── uv.lock                # Lockfile для reproducible installs
 ├── data/
-│   ├── .gitkeep
-│   └── newdata.csv        # 1.4M строк NYC Taxi dataset
-├── models/                # Model Registry
-│   ├── model.cb0          # Symlink на активную CatBoost модель
-│   ├── kmeans.pkl         # Symlink на активный KMeans
-│   ├── registry.json      # Активная версия, список версий, метрики
+│   └── newdata.csv        # 1.4M строк NYC Taxi
+├── models/
+│   ├── model.cb0          # Активная CatBoost (symlink)
+│   ├── kmeans.pkl         # Активный KMeans (symlink)
+│   ├── registry.json      # Список версий и метрики (RMSLE=0.351)
 │   └── versions/
 │       └── v20260205121526/
 │           ├── model.cb0
 │           ├── kmeans.pkl
 │           └── metrics.json
 └── src/
-    ├── common/
-    │   ├── config.py        # Pydantic settings (.env)
-    │   ├── logger.py        # Loguru логгер (INFO/ERROR)
-    │   ├── preprocessing.py # TripPreprocessor (haversine, KMeans, outliers, target log)
-    │   └── schemas.py       # Pydantic: TripRequest, PredictionResponse
+    ├── common/            # Shared логика
+    │   ├── config.py      # Pydantic settings (.env)
+    │   ├── logger.py      # Loguru (INFO/ERROR)
+    │   ├── preprocessing.py # TripPreprocessor (haversine, KMeans, outliers, log‑target)
+    │   └── schemas.py     # Pydantic (TripRequest, PredictionResponse)
     ├── inference/
-    │   ├── app.py           # FastAPI (endpoints: /health, /predict, /modelinfo, /modelreload)
-    │   ├── modelloader.py   # Загрузка модели из registry.json
-    │   └── predictor.py     # Препроцессинг → CatBoost.predict → expm1
+    │   ├── app.py         # FastAPI endpoints: /health, /predict, /modelinfo, /modelreload
+    │   ├── modelloader.py # Загрузка моделей из registry.json
+    │   └── predictor.py   # Препроцессинг → predict → expm1
     └── training/
-        ├── train.py         # Обучение: split 80/20, Optuna tuning, metrics
-        ├── validator.py     # Проверка RMSLE < 0.40
-        └── deployer.py      # Сохранение версии, обновление registry
+        ├── train.py       # Обучение c Optuna tuning
+        ├── validator.py   # Проверка RMSLE < 0.40
+        └── deployer.py    # Сохранение модели, обновление registry.json
 
 ⚙️ Установка и запуск
 
-    Установите uv:
+1. Установить uv:
 
-    bash
-    curl -LsSf https://astral.sh/uv/install.sh | sh
+bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
 
-    Синхронизация зависимостей:
+2. Синхронизация зависимостей:
 
-    bash
-    cd ml-mvp
-    uv sync   # editable install из src/
+bash
+cd ml-mvp
+uv sync
 
-    Обучение модели:
-
-    bash
-    docker compose --profile tools up training
-
-    После 619 итераций Optuna сохранит новую версию модели в models/versions/vNEW.
-
-    Запуск API (инференс):
-
-    bash
-    docker compose up inference
-
-    Swagger UI: http://localhost:8000/docs
-
-    Тестирование:
-
-    bash
-    uv run pytest tests
-
-    (Покрытие 80%: preprocessing, inference, models)
-
-🧠 Обучение модели
-
-Поместите датасет в data/newdata.csv (примерно 1.4M строк, поля pickup/dropoff coords, passengers, datetime).
-
-Запуск обучения:
+3. Обучение модели:
 
 bash
 docker compose --profile tools up training
 
-Что происходит:
+После 619 итераций Optuna сохранит новую версию модели в models/versions/vNEW/.
 
-    Препроцессинг:
+4. Запустить инференс:
 
-        расчёт haversine distance
+bash
+docker compose up inference
 
-        извлечение фичей времени (hour, day_of_week, is_weekend)
+API будет доступно на → http://localhost:8000/docs
 
-        кластеризация KMeans (pickup/dropoff = 10 кластеров)
+5. Тестирование:
 
-        фильтрация выбросов (p99.86 по длительности)
+bash
+uv run pytest tests
 
-        логарифмирование целевой переменной
+(Покрытие ~80%: preprocessing, inference, models)
+🧠 Обучение модели
 
-    Модель: CatBoost (lr=0.145, depth=6, iterations=619)
+Данные: data/newdata.csv (1.4M строк: pickup/dropoff координаты, пассажиры, datetime).
+Запуск:
 
-    Результаты:
+bash
+docker compose --profile tools up training
+
+Pipeline:
+
+    препроцессинг: haversine distance, datetime (hour, dayofweek, weekend), KMeans=10
+
+    фильтрация выбросов (p99.86 длительности), лог‑таргет
+
+    Optuna tuning CatBoost (lr=0.145, depth=6, iterations=619)
+
+    метрики:
 
         RMSLE = 0.351
 
-        RMSE = 348 сек.
+        RMSE = 348s
 
-        MAE = 192 сек.
+        MAE = 192s
 
         R² = 0.73
 
-Если RMSLE ≥ 0.40 → модель отклоняется (validator.py).
+Если RMSLE ≥ 0.40 → модель отклоняется.
+При успехе деплой сохраняет артефакты и обновляет registry.json.
 
-Если модель прошла валидацию, deployer.py:
-
-    сохраняет артефакты в models/versions/vYYYYMMDDHHMMSS/;
-
-    обновляет registry.json (activeversion = vNEW);
-
-    создаёт symlink model.cb0 → vNEW/model.cb0.
-
-Логи обучения:
+📜 Логи:
 
 bash
 docker logs taxitraining
 
-Метрики: models/versions/vNEW/metrics.json
-🚀 Инференс (API)
+🚀 Инференс API
+
 Health Check
 
 bash
 curl http://localhost:8000/health
-# {"status": "healthy", "modelversion": "v20260205121526"}
+# {"status":"healthy","modelversion":"v20260205121526"}
 
 Single Prediction
 
 bash
 curl -X POST http://localhost:8000/predict \
-  -H "Content-Type: application/json" \
-  -d '{
-        "pickuplongitude": -73.982,
-        "pickuplatitude": 40.768,
-        "dropofflongitude": -73.965,
-        "dropofflatitude": 40.766,
-        "passengercount": 1,
-        "pickupdatetime": "2016-03-14 17:24:55"
-      }'
+-H "Content-Type: application/json" \
+-d '{
+  "pickuplongitude": -73.982,
+  "pickuplatitude": 40.768,
+  "dropofflongitude": -73.965,
+  "dropofflatitude": 40.766,
+  "passengercount": 1,
+  "pickupdatetime": "2016-03-14 17:24:55"
+}'
 
-Ответ (~9ms):
+Ответ (~9 ms):
 
 json
 {
@@ -154,20 +136,21 @@ json
   "modelversion": "v20260205121526"
 }
 
-Модель и перезагрузка
+Model info
 
 bash
-# Информация о метриках модели
-curl http://localhost:8000/modelinfo   # RMSLE=0.351
+curl http://localhost:8000/modelinfo
+# RMSLE=0.351
 
-# Hot reload активной модели
+Hot reload
+
+bash
 curl -X POST http://localhost:8000/modelreload
 
-Swagger UI доступен по адресу:
-➡️ http://localhost:8000/docs
-📦 Batch предсказания
+Swagger UI: http://localhost:8000/docs
+🧰 Batch‑предсказания
 
-Через Python CLI:
+Через CLI:
 
 bash
 uv run python tools/batchpredict.py \
@@ -180,21 +163,43 @@ bash
 docker compose run tools python tools/batchpredict.py \
   --input data/newdata.csv
 
-Результат: predictions.csv
-(1.4M строк → ~30 сек CPU, колонки: predicteddurationseconds, modelversion).
+Результат: predictions.csv (1.4M строк, latency ~30 s CPU).
+Поддерживаются данные без tripduration и id.
 
-PowerShell (API): batchpredict.ps1
-
-⚠️ Поддерживает данные без id / tripduration — они автоматически отбрасываются в препроцессинге.
-📊 Метрики и улучшения
-Метрика	Baseline (Etap1)	Optuna (Etap4)
+PowerShell‑версия: batchpredict.ps1
+📊 Метрики
+Метрика	Baseline	Optuna Tuning
 RMSLE	0.368	0.351
-RMSE	373s	348s
-MAE	209s	192s
+RMSE	373 s	348 s
+MAE	209 s	192 s
 R²	0.690	0.731
 
-Фичи (30):
-haversine distance, datetime features (hour, dayofweek, isweekend), KMeans clusters и производные признаки.
+Фичи (30): haversine distance, datetime признаки, KMeans‑кластеры.
+🔭 Roadmap
+
+    ☑️ CatBoost модель с Optuna
+
+    ☑️ Model Registry + hot reload
+
+    🔜 MLflow Tracking
+
+    🔜 CI/CD (GitHub Actions)
+
+    🔜 Prometheus + Grafana мониторинг
+
+🧠 Технологический стек
+Категория	Используется
+ML	CatBoost, Optuna, Pandas, scikit‑learn
+API	FastAPI
+Infra	Docker Compose, uv
+Config	Pydantic settings
+Logging	Loguru
+Versioning	JSON‑based Model Registry
+👤 Автор
+
+MLOps MVP Project
+→ Демонстрация продакшн‑ориентированного ML‑сервиса:
+модульность, воспроизводимость, удобство CI/CD и версионности моделей.
 
 Планы развития:
 
