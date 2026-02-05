@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  # === Сервис 1: Inference (работает 24/7) ===
+  inference:
+    build:
+      context: .
+      dockerfile: src/inference/Dockerfile
+    container_name: taxi_inference
+    ports:
+      - "${PORT:-8000}:8000"
+    volumes:
+      - ./models:/app/models      # Общий доступ к моделям
+      - ./data:/app/data          # Доступ к данным (опционально)
+      - ./src:/app/src            # Hot-reload для разработки
+    env_file:
+      - .env
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - ml-network
+
+  # === Сервис 2: Training (запускается по требованию) ===
+  training:
+    build:
+      context: .
+      dockerfile: src/training/Dockerfile
+    container_name: taxi_training
+    volumes:
+      - ./models:/app/models      # Сохранение обученных моделей
+      - ./data:/app/data          # Доступ к данным для обучения
+      - ./src:/app/src            # Hot-reload для разработки
+    env_file:
+      - .env
+    depends_on:
+      - inference                 # Training должен видеть Inference
+    profiles:
+      - tools                     # ← ПРОФИЛЬ: запускается только по команде
+    networks:
+      - ml-network
+
+networks:
+  ml-network:
+    driver: bridge
+
+volumes:
+  models:
+    driver: local
+  data:
+    driver: local

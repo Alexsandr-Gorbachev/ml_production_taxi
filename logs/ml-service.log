@@ -1,0 +1,121 @@
+2026-02-05 22:26:38 | src.common.logger | INFO | 🚀 Logger initialized for ml-service
+2026-02-05 22:26:53 | inference.model_loader | INFO | Loaded model and KMeans for version=v20260205185031 from models\versions\v20260205185031
+2026-02-05 22:28:18 | src.common.logger | INFO | 🚀 Logger initialized for ml-service
+2026-02-05 22:28:19 | inference.model_loader | INFO | Loaded model and KMeans for version=v20260205185031 from models\versions\v20260205185031
+2026-02-05 22:32:32 | src.common.logger | INFO | 🚀 Logger initialized for ml-service
+2026-02-05 22:32:33 | common.logger | INFO | 🚀 Logger initialized for ml-service
+2026-02-05 22:32:33 | __main__ | INFO | 🚀 Starting batch prediction...
+2026-02-05 22:32:34 | inference.model_loader | INFO | Loaded model and KMeans for version=v20260205185031 from models\versions\v20260205185031
+2026-02-05 22:32:34 | __main__ | INFO | ✅ Model loaded: vv20260205185031
+2026-02-05 22:32:36 | __main__ | INFO | 📊 Loaded 1,458,644 rows
+2026-02-05 22:32:36 | __main__ | INFO | 🔄 Preprocessing (haversine + KMeans + datetime)...
+2026-02-05 22:32:39 | __main__ | INFO |    Features shape: (1458644, 39)
+2026-02-05 22:32:39 | __main__ | INFO | 🤖 Predicting...
+2026-02-05 22:32:39 | __main__ | ERROR | ❌ Failed: Bad value for num_feature[non_default_doc_idx=0,feature_idx=0]="id2875421": Cannot convert 'b'id2875421'' to float
+2026-02-05 22:35:18 | src.common.logger | INFO | 🚀 Logger initialized for ml-service
+2026-02-05 22:35:19 | common.logger | INFO | 🚀 Logger initialized for ml-service
+2026-02-05 22:35:19 | __main__ | INFO | 🚀 Batch prediction started
+2026-02-05 22:35:19 | inference.model_loader | INFO | Loaded model and KMeans for version=v20260205185031 from models\versions\v20260205185031
+2026-02-05 22:35:19 | __main__ | INFO | ✅ Модель vv20260205185031 (RMSLE: 0.3505924526187662) загружена
+2026-02-05 22:35:22 | __main__ | INFO | 📊 Загружено 1,458,644 строк
+2026-02-05 22:35:22 | __main__ | INFO | 🔄 Preprocessing...
+2026-02-05 22:35:24 | __main__ | INFO |    Features: (1458644, 37)
+2026-02-05 22:35:24 | __main__ | INFO | 🤖 CatBoost predict...
+2026-02-05 22:35:25 | __main__ | ERROR | 💥 Ошибка: Bad value for num_feature[non_default_doc_idx=0,feature_idx=2]="2016-03-14 17:32:30": Cannot convert 'b'2016-03-14 17:32:30'' to float
+2026-02-05 22:44:58 | src.common.logger | INFO | 🚀 Logger initialized for ml-service
+2026-02-05 22:44:59 | common.logger | INFO | 🚀 Logger initialized for ml-service
+2026-02-05 22:44:59 | __main__ | INFO | 🚀 Batch prediction started
+2026-02-05 22:44:59 | inference.model_loader | INFO | Loaded model and KMeans for version=v20260205185031 from models\versions\v20260205185031
+2026-02-05 22:44:59 | __main__ | INFO | ✅ Модель vv20260205185031 (RMSLE: 0.3505924526187662) загружена
+2026-02-05 22:45:02 | __main__ | INFO | 📊 Загружено 1,458,644 строк
+2026-02-05 22:45:02 | __main__ | INFO | 🔄 Preprocessing...
+2026-02-05 22:45:04 | __main__ | INFO |    Features: (1458644, 37)
+2026-02-05 22:45:04 | __main__ | INFO | 🤖 CatBoost predict...
+2026-02-05 22:45:05 | __main__ | ERROR | 💥 Ошибка: Bad value for num_feature[non_default_doc_idx=0,feature_idx=2]="2016-03-14 17:32:30": Cannot convert 'b'2016-03-14 17:32:30'' to float
+2026-02-05 22:47:33 | src.common.logger | INFO | 🚀 Logger initialized for ml-service
+2026-02-05 22:47:34 | common.logger | INFO | 🚀 Logger initialized for ml-service
+2026-02-05 22:47:34 | __main__ | INFO | 🚀 Batch prediction started
+2026-02-05 22:47:34 | inference.model_loader | INFO | Loaded model and KMeans for version=v20260205185031 from models\versions\v20260205185031
+2026-02-05 22:47:34 | __main__ | INFO | ✅ Модель vv20260205185031 (RMSLE: 0.3505924526187662) загружена
+2026-02-05 22:47:38 | __main__ | INFO | ⏰ Datetime features extracted
+2026-02-05 22:47:39 | __main__ | INFO | 📊 Загружено 1,458,644 строк
+2026-02-05 22:47:39 | __main__ | INFO | 🔄 Preprocessing...
+2026-02-05 22:47:40 | __main__ | INFO |    Features: (1458644, 40)
+2026-02-05 22:47:40 | __main__ | ERROR | 💥 Error: Cannot cast DatetimeArray to dtype float64
+2026-02-05 22:48:54 | src.common.logger | INFO | 🚀 Logger initialized for ml-service
+2026-02-05 22:48:55 | common.logger | INFO | 🚀 Logger initialized for ml-service
+2026-02-05 22:48:55 | __main__ | INFO | 🚀 Batch prediction started
+2026-02-05 22:48:55 | inference.model_loader | INFO | Loaded model and KMeans for version=v20260205185031 from models\versions\v20260205185031
+2026-02-05 22:48:55 | __main__ | INFO | ✅ Model vv20260205185031 (RMSLE: 0.3505924526187662)
+2026-02-05 22:48:59 | __main__ | INFO | ⏰ Datetime → features
+2026-02-05 22:49:00 | __main__ | INFO | 📊 1,458,644 rows
+2026-02-05 22:49:00 | __main__ | INFO | 🔄 Preprocessing...
+2026-02-05 22:49:00 | __main__ | ERROR | 💥 'pickup_datetime'
+2026-02-05 22:54:13 | src.common.logger | INFO | 🚀 Logger initialized for ml-service
+2026-02-05 22:54:13 | common.logger | INFO | 🚀 Logger initialized for ml-service
+2026-02-05 22:54:13 | __main__ | INFO | 🚀 Batch prediction started
+2026-02-05 22:54:14 | inference.model_loader | INFO | Loaded model and KMeans for version=v20260205185031 from models\versions\v20260205185031
+2026-02-05 22:54:14 | __main__ | INFO | ✅ Model vv20260205185031 (RMSLE: 0.3505924526187662)
+2026-02-05 22:54:18 | __main__ | INFO | ⏰ Datetime → features
+2026-02-05 22:54:18 | __main__ | INFO | 📊 1,458,644 rows
+2026-02-05 22:54:18 | __main__ | INFO | 🔄 Preprocessing...
+2026-02-05 22:54:18 | __main__ | ERROR | 💥 'pickup_datetime'
+2026-02-05 22:57:26 | src.common.logger | INFO | 🚀 Logger initialized for ml-service
+2026-02-05 22:57:27 | common.logger | INFO | 🚀 Logger initialized for ml-service
+2026-02-05 22:57:27 | __main__ | INFO | 🚀 Batch predict
+2026-02-05 22:57:27 | inference.model_loader | INFO | Loaded model and KMeans for version=v20260205185031 from models\versions\v20260205185031
+2026-02-05 22:57:27 | __main__ | INFO | ✅ vv20260205185031, RMSLE: 0.3505924526187662
+2026-02-05 22:57:30 | __main__ | INFO | 📊 1,458,644 rows, cols: ['vendor_id', 'pickup_datetime', 'dropoff_datetime', 'passenger_count', 'pickup_longitude', 'pickup_latitude', 'dropoff_longitude', 'dropoff_latitude', 'store_and_fwd_flag']
+2026-02-05 22:57:30 | __main__ | INFO | 🔄 Preprocessing...
+2026-02-05 22:57:32 | __main__ | INFO |    ✅ Features: (1458644, 37)
+2026-02-05 22:57:32 | __main__ | INFO | 🤖 Predict...
+2026-02-05 22:57:33 | __main__ | ERROR | 💥 Bad value for num_feature[non_default_doc_idx=0,feature_idx=2]="2016-03-14 17:32:30": Cannot convert 'b'2016-03-14 17:32:30'' to float
+2026-02-05 23:01:45 | src.common.logger | INFO | 🚀 Logger initialized for ml-service
+2026-02-05 23:01:45 | common.logger | INFO | 🚀 Logger initialized for ml-service
+2026-02-05 23:01:45 | __main__ | INFO | 🚀 Batch prediction started
+2026-02-05 23:01:46 | inference.model_loader | INFO | Loaded model and KMeans for version=v20260205185031 from models\versions\v20260205185031
+2026-02-05 23:01:46 | __main__ | INFO | ✅ Model vv20260205185031 (RMSLE: 0.3505924526187662)
+2026-02-05 23:01:48 | __main__ | INFO | 📊 1,458,644 rows
+2026-02-05 23:01:50 | __main__ | INFO | ⏰ Datetime → features
+2026-02-05 23:01:50 | __main__ | INFO | ✅ Pre-cleaned: %s
+2026-02-05 23:01:50 | __main__ | ERROR | 💥 Failed: 'pickup_datetime'
+2026-02-05 23:03:27 | src.common.logger | INFO | 🚀 Logger initialized for ml-service
+2026-02-05 23:03:27 | common.logger | INFO | 🚀 Logger initialized for ml-service
+2026-02-05 23:03:27 | __main__ | INFO | 🚀 Batch prediction started
+2026-02-05 23:03:28 | inference.model_loader | INFO | Loaded model and KMeans for version=v20260205185031 from models\versions\v20260205185031
+2026-02-05 23:03:28 | __main__ | INFO | ✅ Model vv20260205185031 (RMSLE: 0.3505924526187662)
+2026-02-05 23:03:30 | __main__ | INFO | 📊 1,458,644 rows
+2026-02-05 23:03:32 | __main__ | INFO | ⏰ Datetime → features (raw column KEPT)
+2026-02-05 23:03:32 | __main__ | INFO | ✅ Pre-cleaned: (1458644, 12)
+2026-02-05 23:03:32 | __main__ | INFO | 📋 Has pickup_datetime: True
+2026-02-05 23:03:34 | __main__ | ERROR | 💥 Cannot cast DatetimeArray to dtype float64
+2026-02-05 23:04:50 | src.common.logger | INFO | 🚀 Logger initialized for ml-service
+2026-02-05 23:04:50 | common.logger | INFO | 🚀 Logger initialized for ml-service
+2026-02-05 23:04:50 | __main__ | INFO | 🚀 Batch predict
+2026-02-05 23:04:51 | inference.model_loader | INFO | Loaded model and KMeans for version=v20260205185031 from models\versions\v20260205185031
+2026-02-05 23:04:51 | __main__ | INFO | ✅ vv20260205185031 RMSLE: 0.3505924526187662
+2026-02-05 23:04:53 | __main__ | INFO | 📊 1,458,644 rows
+2026-02-05 23:04:55 | __main__ | INFO | ⏰ Features extracted (raw KEPT)
+2026-02-05 23:04:55 | __main__ | INFO | ✅ Clean: (1458644, 12)
+2026-02-05 23:04:57 | __main__ | INFO | 📊 Raw features: (1458644, 40)
+2026-02-05 23:04:57 | __main__ | INFO | 🧹 Dropping datetime cols: ['pickup_datetime', 'dropoff_datetime']
+2026-02-05 23:04:57 | __main__ | INFO | ✅ Numeric features: (1,458,644, 38)
+2026-02-05 23:04:57 | __main__ | INFO | 🔍 Sample dtypes: {'vendor_id': dtype('float64'), 'passenger_count': dtype('float64'), 'pickup_longitude': dtype('float64'), 'pickup_latitude': dtype('float64'), 'dropoff_longitude': dtype('float64')}
+2026-02-05 23:04:57 | __main__ | INFO | 🤖 CatBoost...
+2026-02-05 23:04:58 | __main__ | INFO | 📈 Mean: 797.5s | P95: 1883.1s
+2026-02-05 23:05:11 | __main__ | INFO | 💾 1,458,644 rows → data\preds.csv
+2026-02-05 23:29:44 | src.common.logger | INFO | 🚀 Logger initialized for ml-service
+2026-02-05 23:30:00 | common.logger | INFO | 🚀 Logger initialized for ml-service
+2026-02-05 23:30:00 | __main__ | INFO | 🚀 Batch predict
+2026-02-05 23:30:03 | inference.model_loader | INFO | Loaded model and KMeans for version=v20260205202620 from models\versions\v20260205202620
+2026-02-05 23:30:03 | __main__ | INFO | ✅ vv20260205202620 RMSLE: 0.3523002989104821
+2026-02-05 23:30:08 | __main__ | INFO | 📊 1,458,644 rows
+2026-02-05 23:30:09 | __main__ | INFO | ⏰ Features extracted (raw KEPT)
+2026-02-05 23:30:10 | __main__ | INFO | ✅ Clean: (1458644, 12)
+2026-02-05 23:30:12 | __main__ | INFO | 📊 Raw features: (1458644, 40)
+2026-02-05 23:30:12 | __main__ | INFO | 🧹 Dropping datetime cols: ['pickup_datetime', 'dropoff_datetime']
+2026-02-05 23:30:15 | __main__ | INFO | ✅ Numeric features: (1,458,644, 38)
+2026-02-05 23:30:15 | __main__ | INFO | 🔍 Sample dtypes: {'vendor_id': dtype('float64'), 'passenger_count': dtype('float64'), 'pickup_longitude': dtype('float64'), 'pickup_latitude': dtype('float64'), 'dropoff_longitude': dtype('float64')}
+2026-02-05 23:30:15 | __main__ | INFO | 🤖 CatBoost...
+2026-02-05 23:30:16 | __main__ | INFO | 📈 Mean: 798.2s | P95: 1885.0s
+2026-02-05 23:30:30 | __main__ | INFO | 💾 1,458,644 rows → data\preds.csv
