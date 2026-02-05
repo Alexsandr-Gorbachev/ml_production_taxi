@@ -14,12 +14,37 @@
 
 ```bash
 ml-mvp/
-├── .env                   # Конфиги (RMSLE_THRESHOLD=0.40)
-├── docker-compose.yml     # training, inference:8000, tools
-├── pyproject.toml         # fastapi, catboost, optuna, uv
-├── data/newdata.csv       # 1.4M строк NYC Taxi
-├── models/                # Registry (model.cb0, registry.json, versions/)
-└── src/                   # common/, inference/, training/
+├── .env                   # Конфиги: пути, порты, RMSLE_THRESHOLD=0.40
+├── .gitignore             # venv/, *.pyc, models.pkl и др.
+├── docker-compose.yml     # 3 сервиса: training, inference (port 8000), tools
+├── pyproject.toml         # Зависимости: fastapi, catboost, pandas, optuna, uv
+├── uv.lock                # Lockfile для reproducible installs
+├── data/
+│   ├── .gitkeep
+│   └── newdata.csv        # 1.4M строк NYC Taxi dataset
+├── models/                # Model Registry
+│   ├── model.cb0          # Symlink на активную CatBoost модель
+│   ├── kmeans.pkl         # Symlink на активный KMeans
+│   ├── registry.json      # Активная версия, список версий, метрики
+│   └── versions/
+│       └── v20260205121526/
+│           ├── model.cb0
+│           ├── kmeans.pkl
+│           └── metrics.json
+└── src/
+    ├── common/
+    │   ├── config.py        # Pydantic settings (.env)
+    │   ├── logger.py        # Loguru логгер (INFO/ERROR)
+    │   ├── preprocessing.py # TripPreprocessor (haversine, KMeans, outliers, target log)
+    │   └── schemas.py       # Pydantic: TripRequest, PredictionResponse
+    ├── inference/
+    │   ├── app.py           # FastAPI (endpoints: /health, /predict, /modelinfo, /modelreload)
+    │   ├── modelloader.py   # Загрузка модели из registry.json
+    │   └── predictor.py     # Препроцессинг → CatBoost.predict → expm1
+    └── training/
+        ├── train.py         # Обучение: split 80/20, Optuna tuning, metrics
+        ├── validator.py     # Проверка RMSLE < 0.40
+        └── deployer.py      # Сохранение версии, обновление registry
 
 🚀 Quick Start
 
