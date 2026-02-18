@@ -1,8 +1,7 @@
 # src/training/deployer.py
-from __future__ import annotations
-
 import json
 import shutil
+import requests
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, Any
@@ -14,15 +13,42 @@ from src.common.logger import log
 from src.common.preprocessing import TripPreprocessor
 
 
+def notify_inference_reload(version: str) -> bool:
+    """
+    Уведомляет inference сервис о новой модели через POST /model/reload.
+    Возвращает True если успешно, False если сервис недоступен.
+    """
+    try:
+        url = f"{settings.INFERENCE_HOST}/model/reload"  # ✅ полный URL из settings
+        log.info(f"🔔 Notifying inference service: {url}")
+        response = requests.post(url, timeout=30)         # ✅ убрал params — не нужен
+
+        if response.status_code == 200:
+            log.info(f"✅ Inference reloaded → {version}")
+            return True
+        else:
+            log.error(f"❌ Inference reload failed: HTTP {response.status_code}")
+            return False
+
+    except requests.exceptions.ConnectionError:
+        log.warning("⚠️ Inference service unavailable — reload it manually: POST /model/reload")
+        return False
+    except Exception as e:
+        log.error(f"❌ Could not notify inference service: {e}")
+        return False
+
+
 def deploy_model(
     model,
     preprocessor: TripPreprocessor,
     metrics: Dict[str, Any],
     version: str,
-) -> None:
+) -> bool:
     """
     Сохраняет модель и KMeans в models/versions/{version},
-    обновляет registry.json, копирует активные артефакты в корень models/.
+    обновляет registry.json, копирует активные артефакты в корень models/,
+    уведомляет inference сервис о перезагрузке.
+    Возвращает True если деплой и reload прошли успешно.
     """
     registry_dir = Path(settings.MODEL_REGISTRY_PATH)
     versions_dir = registry_dir / "versions"
@@ -53,7 +79,7 @@ def deploy_model(
             indent=2,
         )
 
-    log.info(f"Saved model and KMeans to {version_dir}")
+    log.info(f"✅ Saved model and KMeans to {version_dir}")
 
     # 2. Обновление registry.json
     registry_file = registry_dir / "registry.json"
@@ -76,11 +102,21 @@ def deploy_model(
     with registry_file.open("w", encoding="utf-8") as f:
         json.dump(registry, f, ensure_ascii=False, indent=2)
 
-    log.info(f"Updated registry.json, active_version={version}")
+    log.info(f"✅ Updated registry.json, active_version={version}")
 
     # 3. Копируем активные артефакты в корень models/
     shutil.copy(model_path, registry_dir / "model.pkl")
     shutil.copy(kmeans_pickup_path, registry_dir / "kmeans_pickup.pkl")
     shutil.copy(kmeans_dropoff_path, registry_dir / "kmeans_dropoff.pkl")
 
-    log.info("Copied active model and KMeans to models/ root")
+    log.info("✅ Copied active model and KMeans to models/ root")
+
+    # 4. ✅ Уведомляем inference сервис о новой модели
+    reloaded = notify_inference_reload(version)
+    if not reloaded:
+        log.warning(
+            "⚠️ Inference не перезагружен автоматически. "
+            "Вызови вручную: POST /model/reload"
+        )
+
+    return reloaded

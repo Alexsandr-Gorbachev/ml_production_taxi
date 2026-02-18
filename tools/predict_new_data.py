@@ -1,120 +1,101 @@
 #!/usr/bin/env python3
 """
-FINAL FIXED: Preprocessor datetime OK + post-clean numeric features
+Batch prediction tool for NYC Taxi duration.
 """
-
 import argparse
 import sys
-import os
-import logging
-import pandas as pd
 import numpy as np
+import pandas as pd
 from pathlib import Path
-import traceback
 
-PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-sys.path.insert(0, PROJECT_ROOT)
-sys.path.insert(0, os.path.join(PROJECT_ROOT, 'src'))
+from src.inference.model_loader import load_active_model  # ✅ абсолютный импорт
+from src.common.logger import log                         # ✅ абсолютный импорт
 
-try:
-    from inference.model_loader import load_active_model
-    from common.logger import log
-    print("✅ Imports OK")
-except ImportError as e:
-    print(f"❌ {e}")
-    sys.exit(1)
 
-def validate_columns(df):
-    required = ['pickup_longitude', 'pickup_latitude', 
-                'dropoff_longitude', 'dropoff_latitude', 'passenger_count']
+def validate_columns(df: pd.DataFrame) -> None:
+    required = [
+        'pickup_longitude', 'pickup_latitude',
+        'dropoff_longitude', 'dropoff_latitude',
+        'passenger_count'
+    ]
     missing = [col for col in required if col not in df.columns]
-    if missing: raise ValueError(f"Missing: {missing}")
-    print(f"✅ Columns: {len(df.columns)}")
+    if missing:
+        raise ValueError(f"Missing required columns: {missing}")
+    log.info(f"✅ Columns OK ({len(df.columns)} total)")  # ✅ log вместо print
 
-def predict_new_data(input_file: str, output_file: str = None):
-    log.info("🚀 Batch predict")
-    
+
+def predict_new_data(input_file: str, output_file: str = None) -> None:
+    log.info("🚀 Starting batch prediction")
+
+    # 1. Загрузка модели
     model, preprocessor, metadata = load_active_model()
     version = metadata['version']
     rmsle = metadata.get('metrics', {}).get('rmsle', 'N/A')
-    log.info(f"✅ v{version} RMSLE: {rmsle}")
-    
+    log.info(f"✅ Loaded model v{version}, RMSLE: {rmsle}")
+
+    # 2. Загрузка данных
     df = pd.read_csv(input_file)
-    log.info(f"📊 {len(df):,} rows")
+    log.info(f"📊 Loaded {len(df):,} rows")
     validate_columns(df)
-    
-    # Drop junk
+
+    # 3. Убираем лишние колонки
     df = df.drop(columns=['id', 'trip_duration'], errors='ignore')
-    
-    # **Datetime prep (KEEP raw для preprocessor!)**
+
+    # 4. ✅ ТОЛЬКО конвертируем тип — фичи создаёт preprocessor сам!
     if 'pickup_datetime' in df.columns:
         df['pickup_datetime'] = pd.to_datetime(df['pickup_datetime'], errors='coerce')
-        df['pickup_hour'] = df['pickup_datetime'].dt.hour.astype(int)
-        df['pickup_dayofweek'] = df['pickup_datetime'].dt.dayofweek.astype(int)
-        df['pickup_month'] = df['pickup_datetime'].dt.month.astype(int)
-        log.info("⏰ Features extracted (raw KEPT)")
-    
-    # Categoricals → numeric
+        log.info("⏰ pickup_datetime converted to datetime")
+        # ✅ НЕ создаём pickup_hour/dayofweek/month здесь — это делает transform()
+
+    # 5. Числовые колонки
     for col in ['vendor_id', 'passenger_count', 'store_and_fwd_flag']:
-        if col in df: 
+        if col in df.columns:
             df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0).astype(int)
-    
-    log.info(f"✅ Clean: {df.shape}")
-    
-    # **Preprocessor (uses pickup_datetime internally)**
-    features = preprocessor.transform(df)
-    log.info(f"📊 Raw features: {features.shape}")
-    
-    # **POST-FIX: Remove datetime + FORCE numeric**
-    # Drop any datetime/object columns
-    datetime_cols = features.select_dtypes(include=['datetime', 'object']).columns
-    if len(datetime_cols) > 0:
-        log.info(f"🧹 Dropping datetime cols: {list(datetime_cols)}")
-        features = features.drop(columns=datetime_cols, errors='ignore')
-    
-    # Cast ONLY numeric columns to float64
-    numeric_features = features.select_dtypes(include=[np.number])
-    if numeric_features.shape[1] == 0:
-        raise ValueError("No numeric features!")
-    
-    features = numeric_features.astype('float64')
-    
-    log.info(f"✅ Numeric features: ({features.shape[0]:,}, {features.shape[1]})")
-    log.info(f"🔍 Sample dtypes: {features.dtypes[:5].to_dict()}")
-    
-    # **Predict**
-    log.info("🤖 CatBoost...")
+
+    log.info(f"✅ Data prepared: {df.shape}")
+
+    # 6. Preprocessing
+    features = preprocessor.transform(df, fit_kmeans=False)
+    log.info(f"📊 After transform: {features.shape}")
+
+    # 7. ✅ СТРОГО нужные фичи в нужном порядке
+    feature_cols = preprocessor.get_feature_columns()
+    features = features[feature_cols]
+    log.info(f"✅ Final features: {features.shape}")
+
+    # 8. Предсказание
+    log.info("🤖 Running CatBoost predictions...")
     log_preds = model.predict(features)
     predictions = np.expm1(log_preds)
-    
-    # **Results**
+
+    # 9. Результаты
     df_result = df.copy()
     df_result['predicted_duration_seconds'] = predictions
     df_result['predicted_duration_minutes'] = predictions / 60
     df_result['model_version'] = version
-    
+
     mean_pred = predictions.mean()
     p95 = np.percentile(predictions, 95)
-    log.info(f"📈 Mean: {mean_pred:.1f}s | P95: {p95:.1f}s")
-    
-    # **Save**
+    log.info(f"📈 Mean: {mean_pred:.1f}s ({mean_pred/60:.1f} min) | P95: {p95:.1f}s")
+
+    # 10. Сохранение
     output_path = Path(output_file or 'data/preds.csv')
     output_path.parent.mkdir(parents=True, exist_ok=True)
     df_result.to_csv(output_path, index=False)
-    log.info(f"💾 {len(df_result):,} rows → {output_path}")
-    print("🎉 SUCCESS!")
+    log.info(f"💾 Saved {len(df_result):,} rows → {output_path}")
+    log.info("🎉 Batch prediction complete!")  # ✅ log вместо print
+
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="NYC Taxi Predict")
-    parser.add_argument('--input', required=True)
-    parser.add_argument('--output', default='data/preds.csv')
+    parser = argparse.ArgumentParser(description="NYC Taxi Batch Predictor")
+    parser.add_argument('--input', required=True, help="Path to input CSV")
+    parser.add_argument('--output', default='data/preds.csv', help="Path to output CSV")
     args = parser.parse_args()
-    
+
     try:
         predict_new_data(args.input, args.output)
     except Exception as e:
-        log.error(f"💥 {e}")
-        traceback.print_exc()
+        log.error(f"💥 Prediction failed: {e}")
         sys.exit(1)
 
 

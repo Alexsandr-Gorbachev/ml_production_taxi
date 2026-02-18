@@ -1,29 +1,27 @@
 # src/training/train.py
-from __future__ import annotations
-
 from datetime import datetime
 from pathlib import Path
 
-import joblib
 import numpy as np
 import pandas as pd
+from catboost import CatBoostRegressor          # ✅ импорт наверху
 from sklearn.metrics import (
-    mean_absolute_error, 
-    mean_squared_error, 
-    r2_score, 
-    mean_squared_log_error
+    mean_absolute_error,
+    mean_squared_error,
+    mean_squared_log_error,
+    r2_score,
 )
 from sklearn.model_selection import train_test_split
 
 from src.common.config import settings
-from src.common.logger import setup_logger, log
+from src.common.logger import log, setup_logger
 from src.common.preprocessing import TripPreprocessor
-from .validator import validate_model
-from .deployer import deploy_model
+from src.training.deployer import deploy_model
+from src.training.validator import validate_model
 
 
 def train_model() -> None:
-    """Full training pipeline Этап 4"""
+    """Full training pipeline — Stage 4"""
     setup_logger("training")
     log.info("=== STARTING TRAINING PIPELINE (Stage 4) ===")
 
@@ -35,16 +33,18 @@ def train_model() -> None:
     df = pd.read_csv(data_path)
     log.info(f"Loaded {len(df):,} rows from {data_path}")
 
-    # 2. Outlier filtering (ноутбук 04)
-    # Min duration 60s
+    # 2. Outlier filtering
     df = df[df["trip_duration"] >= 60]
-    
-    # Upper percentile (99.86%)
-    upper_bound = df["trip_duration"].quantile(settings.TRIP_DURATION_UPPER_PERCENTILE / 100.0)
-    df = df[df["trip_duration"] <= upper_bound]
-    log.info(f"After duration filtering: {len(df):,} rows (upper p{settings.TRIP_DURATION_UPPER_PERCENTILE} -> {upper_bound:.2f}s)")
 
-    # Coordinates + passengers
+    upper_bound = df["trip_duration"].quantile(
+        settings.TRIP_DURATION_UPPER_PERCENTILE / 100.0
+    )
+    df = df[df["trip_duration"] <= upper_bound]
+    log.info(
+        f"After duration filtering: {len(df):,} rows "
+        f"(upper p{settings.TRIP_DURATION_UPPER_PERCENTILE} -> {upper_bound:.2f}s)"
+    )
+
     df = df[
         (df["pickup_latitude"].between(40.5, 40.9)) &
         (df["dropoff_latitude"].between(40.5, 40.9)) &
@@ -66,15 +66,14 @@ def train_model() -> None:
 
     # 5. Train/Test split
     X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=settings.TRAIN_TEST_SPLIT, random_state=settings.RANDOM_STATE
+        X, y,
+        test_size=settings.TEST_SIZE,       # ✅ TEST_SIZE=0.2
+        random_state=settings.RANDOM_STATE
     )
     log.info(f"Train: {len(X_train):,}, Test: {len(X_test):,}, features: {len(feature_cols)}")
 
-    # 6. CatBoost (Optuna Trial 0 из ноутбука 04)
+    # 6. CatBoost
     log.info("Training CatBoostRegressor (Optuna params)...")
-    
-    from catboost import CatBoostRegressor
-    
     model = CatBoostRegressor(
         iterations=619,
         learning_rate=0.145532,
@@ -86,35 +85,32 @@ def train_model() -> None:
         verbose=False,
         random_state=settings.RANDOM_STATE,
         thread_count=-1,
-        task_type="CPU"
+        task_type="CPU",
     )
 
     log.info("Fitting model...")
     model.fit(X_train, y_train, eval_set=(X_test, y_test), verbose=False)
     log.info("Model trained ✓")
 
-    # 7. Metrics (real seconds scale)
-    y_train_pred_log = model.predict(X_train)
-    y_test_pred_log = model.predict(X_test)
-
-    y_train_pred = np.expm1(y_train_pred_log)
-    y_test_pred = np.expm1(y_test_pred_log)
+    # 7. Metrics
+    y_train_pred = np.expm1(model.predict(X_train))
+    y_test_pred  = np.expm1(model.predict(X_test))
     y_train_real = np.expm1(y_train)
-    y_test_real = np.expm1(y_test)
+    y_test_real  = np.expm1(y_test)
 
-    train_rmse = np.sqrt(mean_squared_error(y_train_real, y_train_pred))
-    test_rmse = np.sqrt(mean_squared_error(y_test_real, y_test_pred))
-    test_rmsle = np.sqrt(mean_squared_log_error(y_test_real, y_test_pred))
-    test_mae = mean_absolute_error(y_test_real, y_test_pred)
-    test_r2 = r2_score(y_test_real, y_test_pred)
+    train_rmse  = np.sqrt(mean_squared_error(y_train_real, y_train_pred))
+    test_rmse   = np.sqrt(mean_squared_error(y_test_real, y_test_pred))
+    test_rmsle  = np.sqrt(mean_squared_log_error(y_test_real, y_test_pred))
+    test_mae    = mean_absolute_error(y_test_real, y_test_pred)
+    test_r2     = r2_score(y_test_real, y_test_pred)
 
     metrics = {
-        "rmsle": test_rmsle,
-        "rmse": test_rmse,
-        "mae": test_mae,
-        "r2": test_r2,
-        "train_rmse": train_rmse,
-        "overfitting": abs(train_rmse - test_rmse)
+        "rmsle":       test_rmsle,
+        "rmse":        test_rmse,
+        "mae":         test_mae,
+        "r2":          test_r2,
+        "train_rmse":  train_rmse,
+        "overfitting": abs(train_rmse - test_rmse),
     }
 
     log.info("MODEL METRICS:")
@@ -123,12 +119,26 @@ def train_model() -> None:
     log.info(f"  MAE:   {test_mae:.2f}")
     log.info(f"  R²:    {test_r2:.4f}")
 
-    # 8. Validation
-    validate_model(metrics)
+    # 8. ✅ Validation БЛОКИРУЕТ деплой при провале
+    is_valid = validate_model(metrics)
 
-    # 9. Deploy
+    if not is_valid:
+        log.error(
+            f"❌ VALIDATION FAILED! "
+            f"RMSLE {metrics['rmsle']:.6f} > threshold {settings.MIN_RMSLE_THRESHOLD}"
+        )
+        log.error("🚫 Deployment BLOCKED — модель не прошла валидацию")
+        return  # ← выходим ДО deploy_model!
+
+    # 9. ✅ Deploy только если валидация прошла
+    log.info("✅ Validation passed — deploying model...")
     version = f"v{datetime.now().strftime('%Y%m%d%H%M%S')}"
-    deploy_model(model=model, preprocessor=preprocessor, metrics=metrics, version=version)
+    deploy_model(
+        model=model,
+        preprocessor=preprocessor,
+        metrics=metrics,
+        version=version,
+    )
 
     log.info(f"TRAINING COMPLETE - Model {version} deployed ✓")
 

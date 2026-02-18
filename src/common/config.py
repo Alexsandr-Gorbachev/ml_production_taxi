@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     
     # === Training Data / Split ===
     NEW_DATA_FILE: str = "data/new_data.csv"
-    TRAIN_TEST_SPLIT: float = 0.8
+    TEST_SIZE: float = 0.2
     RANDOM_STATE: int = 42
     
     # === Этап 4: KMeans + Outliers ===
@@ -29,6 +29,9 @@ class Settings(BaseSettings):
     HOST: str = "0.0.0.0"
     PORT: int = 8000
     
+    # === Inference (для автоматического reload после деплоя) ===
+    INFERENCE_HOST: str = "http://inference:8000"  # ✅ имя сервиса из docker-compose
+
     # === Logging ===
     LOG_LEVEL: str = "INFO"
     
@@ -50,4 +53,5 @@ if __name__ == "__main__":
     print(f"  KMeans clusters: {settings.KMEANS_CLUSTERS}")
     print(f"  RMSLE threshold: {settings.MIN_RMSLE_THRESHOLD}")
     print(f"  Host/Port: {settings.HOST}:{settings.PORT}")
+    print(f"  Inference host: {settings.INFERENCE_HOST}")  # ✅
 
